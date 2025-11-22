@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Risk Analyzer - Security Assessment Tool</title>
+    <style>
+        /* ========== CSS STYLES ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #666;
+            line-height: 1.6;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .panel h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .scan-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #fafafa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .scan-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .scan-area:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .camera-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .camera-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .camera-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid #dc3545;
+        }
+
+        .warning-message {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .qr-preview {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .qr-preview img {
+            max-width: 250px;
+            max-height: 250px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border: 5px solid white;
+            transition: all 0.3s ease;
+        }
+
+        .qr-preview img:hover {
+            transform: scale(1.05);
+        }
+
+        .decoded-content {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #333;
+            max-height: 150px;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .risk-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .risk-level {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-right: 20px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .risk-low {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border: 2px solid rgba(132, 250, 176, 0.3);
+        }
+
+        .risk-medium {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border: 2px solid rgba(255, 236, 210, 0.3);
+        }
+
+        .risk-high {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border: 2px solid rgba(255, 154, 158, 0.3);
+        }
+
+        .risk-details {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .risk-factor {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            border-left: 4px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .risk-factor:hover {
+            transform: translateX(5px);
+        }
+
+        .risk-factor.safe {
+            border-left-color: #28a745;
+            background: rgba(40, 167, 69, 0.05);
+        }
+
+        .risk-factor.warning {
+            border-left-color: #ffc107;
+            background: rgba(255, 193, 7, 0.05);
+        }
+
+        .risk-factor.danger {
+            border-left-color: #dc3545;
+            background: rgba(220, 53, 69, 0.05);
+        }
+
+        .risk-icon {
+            font-size: 1.5rem;
+            margin-right: 15px;
+            width: 30px;
+        }
+
+        .risk-text {
+            flex: 1;
+        }
+
+        .risk-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .risk-description {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .guide-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .guide-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .guide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .guide-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #f0f0f0;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .guide-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .guide-item h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .guide-item h3::before {
+            content: "•";
+            margin-right: 8px;
+            font-size: 1.5rem;
+        }
+
+        .guide-item p {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .camera-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .camera-modal.active {
+            display: flex;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .camera-video {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .close-camera {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .close-camera:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.3);
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff00, transparent);
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <h1>🔍 QR Risk Analyzer</h1>
+            <p>Advanced QR Code Security Assessment Tool. Scan and analyze QR codes for potential security risks, malicious URLs, and phishing attempts.</p>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- LEFT PANEL: SCAN -->
+            <div class="panel">
+                <h2>📱 Scan QR Code</h2>
+                
+                <div class="scan-area" id="dropArea">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Drop QR code image here or click to browse</div>
+                    <div class="upload-subtext">Supports: JPG, PNG, GIF, BMP</div>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="camera-btn" id="cameraBtn" onclick="startCamera()">
+                        📹 Use Camera
+                    </button>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div>Analyzing QR code...</div>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+
+                <div class="qr-preview" id="qrPreview" style="display: none;">
+                    <h3 style="margin-bottom: 15px;">Scanned QR Code:</h3>
+                    <img id="qrImage" alt="QR Code">
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: RESULTS -->
+            <div class="panel">
+                <h2>📊 Risk Analysis</h2>
+                
+                <div class="stats-grid" id="statsGrid" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="riskScore">--</div>
+                        <div class="stat-label">Risk Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="scanTime">--</div>
+                        <div class="stat-label">Scan Time</div>
+                    </div>
+                </div>
+
+                <div id="results" style="display: none;">
+                    <div class="risk-indicator">
+                        <div class="risk-level" id="riskLevel">PENDING</div>
+                    </div>
+
+                    <div class="decoded-content" id="decodedContent"></div>
+
+                    <div class="risk-details" id="riskDetails"></div>
+
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button class="camera-btn" onclick="resetAnalyzer()" style="background: #6c757d;">🔄 New Scan</button>
+                        <button class="camera-btn" onclick="copyContent()" id="copyBtn" style="display: none;">📋 Copy Content</button>
+                        <a id="openLinkBtn" class="camera-btn" style="display: none; text-decoration: none;" target="_blank">🔗 Open Link</a>
+                    </div>
+                </div>
+
+                <div id="defaultMessage" class="warning-message">
+                    <strong>⚠️ Security Notice:</strong> QR codes can contain malicious content. Always verify the source before scanning.
+                </div>
+            </div>
+        </div>
+
+        <!-- USER GUIDE -->
+        <div class="guide-section">
+            <h2>📖 User Guide</h2>
+            <div class="guide-grid">
+                <div class="guide-item">
+                    <h3>1. Upload QR Code</h3>
+                    <p>Click or drag & drop a QR code image into the scan area. The tool supports JPG, PNG, GIF, and BMP formats.</p>
+                </div>
+                <div class="guide-item">
+                    <h3>2. Use Camera</h3>
+                    <p>Click "Use Camera" to scan QR codes directly from your device's camera. This works best on mobile devices.</p>
+                </div>
+                <div class="guide-item">
+                    <h3>3. Review Results</h3>
+                    <p>The tool will analyze the QR code content and provide a risk assessment with detailed security information.</p>
+                </div>
+                <div class="guide-item">
+                    <h3>4. Safety First</h3>
+                    <p>Never scan QR codes from untrusted sources. This tool helps identify potential threats before you access the content.</p>
+                </div>
+                <div class="guide-item">
+                    <h3>5. Risk Levels</h3>
+                    <p><strong style="color: #28a745;">Safe:</strong> 80-100% score<br>
+                       <strong style="color: #ffc107;">Medium:</strong> 50-79% score<br>
+                       <strong style="color: #dc3545;">High Risk:</strong> 0-49% score</p>
+                </div>
+                <div class="guide-item">
+                    <h3>6. Copy & Check</h3>
+                    <p>Always manually type or copy URLs to verify them before visiting, especially for banking or sensitive accounts.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAMERA MODAL -->
+        <div class="camera-modal" id="cameraModal">
+            <div class="camera-container">
+                <button class="close-camera" onclick="stopCamera()">×</button>
+                <video class="camera-video" id="cameraVideo" autoplay></video>
+                <div class="scan-overlay">
+                    <div class="scan-line"></div>
+                </div>
+                <canvas id="canvas" style="display: none;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- INCLUDE JSQR LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    
+    <!-- ========== JAVASCRIPT CODE ========== -->
+    <script>
+        // GLOBAL VARIABLES
+        let stream = null;
+        let scanning = false;
+        let scanStartTime = null;
+
+        // INITIALIZE EVENT LISTENERS
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropArea = document.getElementById('dropArea');
+            const fileInput = document.getElementById('fileInput');
+
+            fileInput.addEventListener('change', handleFileSelect);
+            dropArea.addEventListener('click', () => fileInput.click());
+            dropArea.addEventListener('dragover', handleDragOver);
+            dropArea.addEventListener('drop', handleFileDrop);
+            dropArea.addEventListener('dragleave', handleDragLeave);
+
+            // Check camera support
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                document.getElementById('cameraBtn').disabled = true;
+                document.getElementById('cameraBtn').textContent = '📹 Camera Not Supported';
+            }
+        });
+
+        // FILE HANDLING FUNCTIONS
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) processImage(file);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('dropArea').classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            document.getElementById('dropArea').classList.remove('dragover');
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            document.getElementById('dropArea').classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) processImage(files[0]);
+        }
+
+        // PROCESS UPLOADED IMAGE
+        function processImage(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please upload a valid image file.');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showError('File size too large. Maximum 10MB allowed.');
+                return;
+            }
+
+            document.getElementById('loading').classList.add('active');
+            hideError();
+            scanStartTime = Date.now();
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    document.getElementById('qrImage').src = e.target.result;
+                    document.getElementById('qrPreview').style.display = 'block';
+                    decodeQRCode(img);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // CAMERA FUNCTIONS
+        async function startCamera() {
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                document.getElementById('cameraVideo').srcObject = stream;
+                document.getElementById('cameraModal').classList.add('active');
+                scanning = true;
+                scanStartTime = Date.now();
+                scanCamera();
+            } catch (err) {
+                showError('Camera access denied: ' + err.message);
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            scanning = false;
+            document.getElementById('cameraModal').classList.remove('active');
+        }
+
+        function scanCamera() {
+            if (!scanning) return;
+
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+                if (code) {
+                    stopCamera();
+                    canvas.toBlob(blob => {
+                        const url = URL.createObjectURL(blob);
+                        document.getElementById('qrImage').src = url;
+                        document.getElementById('qrPreview').style.display = 'block';
+                        const img = new Image();
+                        img.onload = () => decodeQRCode(img, code.data);
+                        img.src = url;
+                    });
+                    return;
+                }
+            }
+
+            requestAnimationFrame(scanCamera);
+        }
+
+        // QR DECODING
+        function decodeQRCode(img, predefinedData = null) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            try {
+                let code = predefinedData;
+                if (!code) {
+                    code = jsQR(imageData.data, canvas.width, canvas.height);
+                    if (!code) throw new Error('No QR code found in the image.');
+                    code = code.data;
+                }
+                analyzeContent(code);
+            } catch (err) {
+                showError('Error decoding QR code: ' + err.message);
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        // RISK ANALYSIS
+        function analyzeContent(content) {
+            const scanTime = ((Date.now() - scanStartTime) / 1000).toFixed(2);
+            document.getElementById('scanTime').textContent = scanTime + 's';
+            document.getElementById('decodedContent').textContent = content;
+
+            const urlPattern = /^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/i;
+            const isUrl = urlPattern.test(content);
+            
+            const riskFactors = [];
+            let riskScore = 0;
+            let maxRisk = 0;
+
+            if (isUrl) {
+                analyzeUrl(content, riskFactors);
+            } else {
+                analyzeTextContent(content, riskFactors);
+            }
+
+            riskFactors.forEach(factor => {
+                switch (factor.level) {
+                    case 'safe': riskScore += 0; break;
+                    case 'warning': riskScore += 3; maxRisk += 5; break;
+                    case 'danger': riskScore += 5; maxRisk += 5; break;
+                }
+            });
+
+            const safetyScore = maxRisk > 0 ? Math.max(0, 100 - (riskScore / maxRisk) * 100) : 100;
+            displayResults(content, isUrl, safetyScore, riskFactors);
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        function analyzeUrl(url, riskFactors) {
+            try {
+                const parsedUrl = new URL(url);
+
+                if (parsedUrl.protocol === 'https:') {
+                    riskFactors.push({
+                        level: 'safe',
+                        title: 'Secure Protocol',
+                        description: 'Uses HTTPS encryption'
+                    });
+                } else if (parsedUrl.protocol === 'http:') {
+                    riskFactors.push({
+                        level: 'warning',
+                        title: 'Insecure Protocol',
+                        description: 'Uses unencrypted HTTP'
+                    });
+                }
+
+                const domain = parsedUrl.hostname;
+                const suspiciousTlds = ['.xyz', '.top', '.win', '.bid', '.stream', '.download'];
+                if (suspiciousTlds.some(tld => domain.endsWith(tld))) {
+                    riskFactors.push({
+                        level: 'warning',
+                        title: 'Suspicious Domain',
+                        description: 'Uses uncommon top-level domain'
+                    });
+                }
+
+                const ipRegex = /^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/;
+                if (ipRegex.test(domain)) {
+                    riskFactors.push({
+                        level: 'danger',
+                        title: 'Direct IP Access',
+                        description: 'URL uses direct IP address instead of domain name'
+                    });
+                }
+
+                const shorteners = ['bit.ly', 'tinyurl.com', 't.co', 'goo.gl', 'ow.ly', 'buff.ly'];
+                if (shorteners.some(s => domain.includes(s))) {
+                    riskFactors.push({
+                        level: 'warning',
+                        title: 'URL Shortener',
+                        description: 'Uses URL shortening service - destination unclear'
+                    });
+                }
+
+                const suspiciousPatterns = ['login', 'signin', 'verify', 'account', 'secure', 'bank', 'update'];
+                const path = parsedUrl.pathname.toLowerCase();
+                if (suspiciousPatterns.some(p => path.includes(p))) {
+                    riskFactors.push({
+                        level: 'warning',
+                        title: 'Suspicious Path',
+                        description: 'Contains words often used in phishing attacks'
+                    });
+                }
+
+                if (url.length > 100) {
+                    riskFactors.push({
+                        level: 'warning',
+                        title: 'Long URL',
+                        description: 'Unusually long URL may be trying to hide malicious content'
+                    });
+                }
+
+                const paramCount = parsedUrl.searchParams.keys().length;
+                if (paramCount > 5) {
+                    riskFactors.push({
+                        level: 'warning',
+                        title: 'Many Parameters',
+                        description: 'Contains many URL parameters which could be suspicious'
+                    });
+                }
+
+                if (url.includes('@') && url.indexOf('@') < url.indexOf('/', 8)) {
+                    riskFactors.push({
+                        level: 'danger',
+                        title: 'Credential Attempt',
+                        description: 'Contains @ symbol which may indicate credential phishing attempt'
+                    });
+                }
+
+            } catch (e) {
+                riskFactors.push({
+                    level: 'warning',
+                    title: 'Invalid URL',
+                    description: 'Could not parse URL properly'
+                });
+            }
+        }
+
+        function analyzeTextContent(content, riskFactors) {
+            const suspiciousPatterns = [
+                { pattern: /(bitcoin|btc|ethereum|eth).*address/i, desc: 'Cryptocurrency address' },
+                { pattern: /(password|pwd|pass)\s*[:=]/i, desc: 'Contains password' },
+                { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/, desc: 'Credit card number pattern' },
+                { pattern: /(ssn|social security).*(\d{3}[\s-]?\d{2}[\s-]?\d{4})/i, desc: 'Social Security Number' },
+                { pattern: /(login|signin|verify|account).*detail/i, desc: 'Account verification request' }
+            ];
+
+            for (let item of suspiciousPatterns) {
+                if (item.pattern.test(content)) {
+                    riskFactors.push({
+                        level: 'danger',
+                        title: 'Sensitive Data',
+                        description: item.desc
+                    });
+                }
+            }
+
+            if (content.length > 1000) {
+                riskFactors.push({
+                    level: 'warning',
+                    title: 'Large Content',
+                    description: 'Contains unusually large amount of text'
+                });
+            }
+
+            const base64Pattern = /^[A-Za-z0-9+/]+={0,2}$/;
+            if (base64Pattern.test(content) && content.length > 50) {
+                riskFactors.push({
+                    level: 'warning',
+                    title: 'Encoded Content',
+                    description: 'Content appears to be base64 encoded'
+                });
+            }
+        }
+
+        function displayResults(content, isUrl, safetyScore, riskFactors) {
+            document.getElementById('statsGrid').style.display = 'grid';
+            document.getElementById('riskScore').textContent = Math.round(safetyScore);
+
+            let riskLevel, riskClass;
+            if (safetyScore >= 80) {
+                riskLevel = 'SAFE';
+                riskClass = 'risk-low';
+            } else if (safetyScore >= 50) {
+                riskLevel = 'MEDIUM';
+                riskClass = 'risk-medium';
+            } else {
+                riskLevel = 'HIGH RISK';
+                riskClass = 'risk-high';
+            }
+
+            const riskElement = document.getElementById('riskLevel');
+            riskElement.textContent = riskLevel;
+            riskElement.className = 'risk-level ' + riskClass;
+
+            const detailsContainer = document.getElementById('riskDetails');
+            detailsContainer.innerHTML = '<h3 style="margin-bottom: 15px;">Security Analysis:</h3>';
+            
+            if (riskFactors.length === 0) {
+                detailsContainer.innerHTML += `
+                    <div class="risk-factor safe">
+                        <div class="risk-icon">✅</div>
+                        <div class="risk-text">
+                            <div class="risk-title">No Issues Detected</div>
+                            <div class="risk-description">No security concerns found in this QR code.</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                riskFactors.forEach(factor => {
+                    const icon = factor.level === 'safe' ? '✅' : 
+                                factor.level === 'warning' ? '⚠️' : '🚨';
+                    const factorClass = factor.level === 'safe' ? 'safe' : 
+                                      factor.level === 'warning' ? 'warning' : 'danger';
+                    
+                    detailsContainer.innerHTML += `
+                        <div class="risk-factor ${factorClass}">
+                            <div class="risk-icon">${icon}</div>
+                            <div class="risk-text">
+                                <div class="risk-title">${factor.title}</div>
+                                <div class="risk-description">${factor.description}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            if (isUrl) {
+                const openBtn = document.getElementById('openLinkBtn');
+                openBtn.href = content.startsWith('http') ? content : 'https://' + content;
+                openBtn.style.display = 'inline-block';
+            }
+            
+            document.getElementById('copyBtn').style.display = 'inline-block';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('defaultMessage').style.display = 'none';
+        }
+
+        // UTILITY FUNCTIONS
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = '❌ ' + message;
+            errorElement.style.display = 'block';
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function resetAnalyzer() {
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('qrPreview').style.display = 'none';
+            document.getElementById('statsGrid').style.display = 'none';
+            document.getElementById('defaultMessage').style.display = 'block';
+            document.getElementById('decodedContent').textContent = '';
+            document.getElementById('riskDetails').innerHTML = '';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('copyBtn').style.display = 'none';
+            document.getElementById('openLinkBtn').style.display = 'none';
+            hideError();
+        }
+
+        function copyContent() {
+            const content = document.getElementById('decodedContent').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            });
+        }
+
+        // MAKE FUNCTIONS GLOBALLY AVAILABLE
+        window.startCamera = startCamera;
+        window.stopCamera = stopCamera;
+        window.resetAnalyzer = resetAnalyzer;
+        window.copyContent = copyContent;
+    </script>
+</body>
+</html>
